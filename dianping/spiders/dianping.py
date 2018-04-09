@@ -6,6 +6,8 @@ import re
 from scrapy.selector import Selector
 from scrapy.http.cookies import CookieJar
 
+from dianping.items import DianpingItem
+
 
 
 class QuotesSpider(scrapy.Spider):
@@ -14,7 +16,7 @@ class QuotesSpider(scrapy.Spider):
     def __init__(self):
         super(QuotesSpider, self).__init__()
         self.stand_urls = set()
-        self.cookie = {"Cookie":"_lxsdk_cuid=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _lxsdk=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _hc.v=6434107d-a90d-54b4-c801-9b0ae451b322.1516683779; s_ViewType=10; __utma=1.379189273.1520856175.1520856175.1520856175.1; __utmz=1.1520856175.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aburl=1; __utma=1.562503323.1520923756.1520923756.1520923756.1; __utmz=1.1520923756.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); cy=2; cye=beijing; _lx_utm=utm_source%3Dgoogle%26utm_medium%3Dorganic; _lxsdk_s=1623c920cf4-1a9-31f-42b%7C%7C10"}
+        self.cookie = {"Cookie":"_lxsdk_cuid=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _lxsdk=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _hc.v=6434107d-a90d-54b4-c801-9b0ae451b322.1516683779; s_ViewType=10; __utma=1.379189273.1520856175.1520856175.1520856175.1; __utmz=1.1520856175.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aburl=1; __utma=1.562503323.1520923756.1520923756.1520923756.1; __utmz=1.1520923756.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); cy=2; cye=beijing; _lxsdk_s=162aa4b5285-d6e-08a-a2e%7C%7C252"}
 
    
     def start_requests(self):
@@ -41,12 +43,13 @@ class QuotesSpider(scrapy.Spider):
         for url in urls:
             if 'shop' in url and url.split('/')[-1].isdigit():
                 self.stand_urls.add(url)
-        yield scrapy.Request(url = list(self.stand_urls)[0] + "/review_all/p1", callback= self.parse_stand_url, cookies = self.cookie)
+        yield scrapy.Request(url = list(self.stand_urls)[0] + "/review_all/p1", callback= self.parse_stand_url)
         # for url in self.stand_urls:
         #     yield scrapy.Request(url = url + "/review_all/p1", callback= self.parse_stand_url)
         #     model += 1
         
     def parse_stand_url(self, response):
+        items = DianpingItem()
         hxs = Selector(response)
         # 被评论的商家
         title = hxs.css('h1').css('a').xpath('@title').extract_first()
@@ -69,14 +72,21 @@ class QuotesSpider(scrapy.Spider):
                     des_list.append("".join(des))
             
             comment_detail = comment_list[item].xpath('div[@class="main-review"]/div[@class="review-words Hide"]/text()').extract_first()
-            url = response.url
-            print ("title is %s commenter_name is %s and comment_level is %s and comment_stats is %s and comment_descript is %s and url_is %s and comment_detail is %s" %(title, commenter_name, 
-            commenter_level, comment_stars, des_list, response.url, comment_detail) )           
+
+            items['title'] = title
+            items['commenter_name'] = commenter_name
+            items['commenter_level'] = commenter_level
+            items['comment_stars'] = comment_stars
+            items['comment_descript'] = des_list
+            items['shop_url'] = response.url
+            items['comment_detail'] = comment_detail
+            yield items 
+
+                 
         pages = response.xpath('//div[@class="bottom-area clearfix"]/div[@class="reviews-pages"]').css("a::text").extract()
         # 找到 max pages
         max_page_id = max(int(i) for i in pages if i.isdigit())
-        basic_page_id = response.url.split("/")[-1][-1]
-        print (basic_page_id)
+        basic_page_id = response.url.split("/")[-1][1:]
         if int(basic_page_id) <= max_page_id:
             next_url = response.url.rsplit("/", 1)[0] + "/p%s" % (int(basic_page_id) + 1)
             yield scrapy.Request(url = next_url, callback=self.parse_stand_url, cookies = self.cookie)

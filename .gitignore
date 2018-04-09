@@ -18,4 +18,5 @@
 *.log
 *.sql
 *.sqlite
+settings.py
 

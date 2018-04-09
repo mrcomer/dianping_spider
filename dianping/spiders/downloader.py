@@ -1,11 +1,12 @@
 # coding:utf-8
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from scrapy.http.cookies import CookieJar
-import requests
+# from selenium import webdriver
+# from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
+# from selenium.webdriver.common.by import By
+# from scrapy.http.cookies import CookieJar
+# import requests
+import pymysql
 
 
 # def test():
@@ -39,12 +40,36 @@ import requests
     # with open("/Users/viver/detail.html", 'wb') as f:
     #     f.write(data)
 
-def test_cookies():
-    res = requests.get("http://www.dianping.com/beijing/ch10/g110", params={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36'})
-    print (res.status_code)
-    print (res.content)
-    
 
+
+# def test_cookies():
+#     res = requests.get("http://www.dianping.com/beijing/ch10/g110", params={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.162 Safari/537.36'})
+#     print (res.status_code)
+#     print (res.content)
+
+class Test(object):
+    def __init__(self):
+        self.connect = pymysql.connect(
+            host = "119.29.67.169",
+            db = "dianping",
+            user = "dev",
+            passwd = "2070lxx%",
+            charset = 'utf-8',
+            port = 3306
+        )
+        self.cursor = self.connect.cursor()
+    
+    def inser_data(self):
+        sql = u"""
+            insert into dp_script (shop_name, commenter_name, commenter_level,
+                comment_stars, comment_descript,shop_url,comment_detail)
+                values(%s, %s, %s, %s, %s, %s, %s)
+        """.format(
+                "hah", "被子", "10", "50", "ha", "bb","dd"
+        )
+        self.cursor.execute(sql)
+        self.connect.commit()
     
 if __name__ == "__main__":
-    test_cookies()
+    test = Test()
+    test.inser_data()
