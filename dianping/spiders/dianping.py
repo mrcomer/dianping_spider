@@ -5,8 +5,9 @@ import requests
 import re
 from scrapy.selector import Selector
 from scrapy.http.cookies import CookieJar
-
+from scrapy_redis.spiders import RedisSpider
 from dianping.items import DianpingItem
+from dianping.settings import LOCAL_PROXIES
 
 
 
@@ -21,21 +22,29 @@ class QuotesSpider(scrapy.Spider):
    
     def start_requests(self):
         urls = [
-            'http://www.dianping.com/shopall/2/0',
-            # 'http://www.dianping.com/shop/96062595/review_all'
+            'http://www.dianping.com/shopall/2/0'
         ]
         for url in urls:
             yield scrapy.Request(url=url)
+    
+    def del_ip(self, ip):
+        LOCAL_PROXIES.remove(ip)
+        
 
     def parse(self, response):
         hxs = Selector(response)
+        if int(response.status) != 200:
+            self.del_ip(response.meta['proxy'].split("//")[1])
+
         urls = hxs.css('dl')[1].css('li').css('a').xpath('@href').extract()
-        yield scrapy.Request(url = 'http:' + urls[0], callback = self.parse_basic_url, cookies=self.cookie) 
-        # for url in urls:
-        #     yield scrapy.Request(url = 'http:' + url, callback = self.parse_basic_url) 
+        # yield scrapy.Request(url = 'http:' + urls[0], callback = self.parse_basic_url, cookies=self.cookie) 
+        for url in urls:
+            yield scrapy.Request(url = 'http:' + url, callback = self.parse_basic_url) 
             
         
     def parse_basic_url(self, response):
+        if int(response.status) != 200:
+            self.del_ip(response.meta['proxy'].split("//")[1])
         hxs = Selector(response)
         urls = hxs.css('ul').css('li').css('a').xpath('@href').extract()
         with open('stand_url_second.html', 'wb') as f:
@@ -43,14 +52,15 @@ class QuotesSpider(scrapy.Spider):
         for url in urls:
             if 'shop' in url and url.split('/')[-1].isdigit():
                 self.stand_urls.add(url)
-        yield scrapy.Request(url = list(self.stand_urls)[0] + "/review_all/p1", callback= self.parse_stand_url)
-        # for url in self.stand_urls:
-        #     yield scrapy.Request(url = url + "/review_all/p1", callback= self.parse_stand_url)
-        #     model += 1
+        for url in self.stand_urls:
+            yield scrapy.Request(url = url + "/review_all/p1", callback= self.parse_stand_url)
         
     def parse_stand_url(self, response):
         items = DianpingItem()
         hxs = Selector(response)
+        #淘汰失效IP
+        if int(response.status) != 200:
+            self.del_ip(response.meta['proxy'].split("//")[1])
         # 被评论的商家
         title = hxs.css('h1').css('a').xpath('@title').extract_first()
         # 获取所有的评论信息
@@ -85,7 +95,7 @@ class QuotesSpider(scrapy.Spider):
                  
         pages = response.xpath('//div[@class="bottom-area clearfix"]/div[@class="reviews-pages"]').css("a::text").extract()
         # 找到 max pages
-        max_page_id = max(int(i) for i in pages if i.isdigit())
+        max_page_id = max(int(i) for i in pages if i.isdigit() else 0)
         basic_page_id = response.url.split("/")[-1][1:]
         if int(basic_page_id) <= max_page_id:
             next_url = response.url.rsplit("/", 1)[0] + "/p%s" % (int(basic_page_id) + 1)
