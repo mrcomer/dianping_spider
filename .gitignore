@@ -19,5 +19,5 @@
 *.sql
 *.sqlite
 *.py[cod]
-settings.py
+dianping/settings.py
 
