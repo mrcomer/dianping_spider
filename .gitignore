@@ -18,5 +18,6 @@
 *.log
 *.sql
 *.sqlite
+*.py[cod]
 settings.py
 
