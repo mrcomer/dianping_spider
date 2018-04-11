@@ -56,11 +56,11 @@ class QuotesSpider(scrapy.Spider):
             yield scrapy.Request(url = url + "/review_all/p1", callback= self.parse_stand_url)
         
     def parse_stand_url(self, response):
-        items = DianpingItem()
-        hxs = Selector(response)
         #淘汰失效IP
         if int(response.status) != 200:
             self.del_ip(response.meta['proxy'].split("//")[1])
+        items = DianpingItem()
+        hxs = Selector(response)
         # 被评论的商家
         title = hxs.css('h1').css('a').xpath('@title').extract_first()
         # 获取所有的评论信息
@@ -95,7 +95,7 @@ class QuotesSpider(scrapy.Spider):
                  
         pages = response.xpath('//div[@class="bottom-area clearfix"]/div[@class="reviews-pages"]').css("a::text").extract()
         # 找到 max pages
-        max_page_id = max(int(i) for i in pages if i.isdigit() else 0)
+        max_page_id = max(int(i) for i in pages if i.isdigit())
         basic_page_id = response.url.split("/")[-1][1:]
         if int(basic_page_id) <= max_page_id:
             next_url = response.url.rsplit("/", 1)[0] + "/p%s" % (int(basic_page_id) + 1)

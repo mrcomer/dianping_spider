@@ -22,8 +22,14 @@ class ProxyMiddleware(object):
     """随机选择代理"""
     def __init__(self):
         self.redis_cli = RedisCli.get_redis_cli()
+        self.url_count = {}
         
     def process_request(self, request, spider):
+        retry_times = int(request.meta.get("retry_times", 0))
+        ip_proxy = request.meta.get("proxy", 0)
+        if retry_times >= 2:
+            LOCAL_PROXIES.remove(ip_proxy.split("//")[1])
+
         if len(LOCAL_PROXIES) == 0:
             ip_count = self.redis_cli.scard("proxies")
             if ip_count:
@@ -39,7 +45,6 @@ class ProxyMiddleware(object):
                 LOCAL_PROXIES.append(str(ip, encoding = "utf8"))
             
         proxy = random.choice(LOCAL_PROXIES)
-        print (LOCAL_PROXIES)
         print ("currant_ip_proxy_is_%s ********" %proxy)
         request.meta['proxy'] = "http://%s" % proxy
         return None
