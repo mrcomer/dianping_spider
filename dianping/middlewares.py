@@ -23,12 +23,20 @@ class ProxyMiddleware(object):
     def __init__(self):
         self.redis_cli = RedisCli.get_redis_cli()
         self.url_count = {}
+        self.count = 1
         
     def process_request(self, request, spider):
+        self.count += 1
+        print ("count_is_%s" % self.count)
+        if not self.count % 50:
+            LOCAL_PROXIES.clear()
+
         retry_times = int(request.meta.get("retry_times", 0))
         ip_proxy = request.meta.get("proxy", 0)
+        print (LOCAL_PROXIES)
         if retry_times >= 1:
             LOCAL_PROXIES.remove(ip_proxy.split("//")[1])
+            self.redis_cli.srem("proxies",ip_proxy.split("//")[1] )
 
         if len(LOCAL_PROXIES) == 0:
             ip_count = self.redis_cli.scard("proxies")
@@ -45,5 +53,6 @@ class ProxyMiddleware(object):
                 LOCAL_PROXIES.append(str(ip, encoding = "utf8"))
         
         proxy = random.choice(LOCAL_PROXIES)
+        print ("currant_ip_proxy_is_%s ********" %proxy)
         request.meta['proxy'] = "http://%s" % proxy
         return None
