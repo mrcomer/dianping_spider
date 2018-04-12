@@ -29,12 +29,13 @@ class DianpingPipeline(object):
         comment_descript = item.get("comment_descript")
         shop_url = item.get("shop_url")
         comment_detail = item.get("comment_detail")
+        city = item.get("city")
 
         sql = u"""
             insert into dp_script (shop_name, commenter_name, commenter_level,
-            comment_stars, comment_descript,shop_url,comment_detail)
-            values("%s", "%s", %s, %s, "%s", "%s", "%s")
-        """%(title, commenter_name, commenter_level, comment_stars, comment_descript, shop_url, comment_detail)
+            comment_stars, comment_descript,shop_url,comment_detail, city)
+            values("%s", "%s", %s, %s, "%s", "%s", "%s", "%s")
+        """%(title, commenter_name, commenter_level, comment_stars, comment_descript, shop_url, comment_detail, city)
         self.cursor.execute(sql)
         self.connect.commit()
         return item

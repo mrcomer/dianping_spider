@@ -26,4 +26,6 @@ class DianpingItem(scrapy.Item):
     shop_url = scrapy.Field()
     # 详细的评价
     comment_detail = scrapy.Field()
+    # 城市
+    city = scrapy.Field()
     

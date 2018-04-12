@@ -99,7 +99,7 @@ class DetailSpider(scrapy.Spider):
                 url = self.redis_cli.spop("%s_stand_url"% values)
                 url = str(url, encoding = "utf8")
                 self.redis_cli.sadd("%s_finish_url" % values, url)
-                yield scrapy.Request(url = url + "/review_all/p1", callback=self.parse_stand_url)
+                yield scrapy.Request(url = url + "/review_all/p1", callback=self.parse_stand_url, meta={'city':values})
 
     def del_ip(self, ip):
         try:
@@ -142,6 +142,7 @@ class DetailSpider(scrapy.Spider):
             items['comment_descript'] = des_list
             items['shop_url'] = response.url
             items['comment_detail'] = comment_detail
+            items['city'] = response.meta.get("city", "other")
             yield items 
 
                  
