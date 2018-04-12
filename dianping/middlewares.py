@@ -27,7 +27,7 @@ class ProxyMiddleware(object):
     def process_request(self, request, spider):
         retry_times = int(request.meta.get("retry_times", 0))
         ip_proxy = request.meta.get("proxy", 0)
-        if retry_times >= 2:
+        if retry_times >= 1:
             LOCAL_PROXIES.remove(ip_proxy.split("//")[1])
 
         if len(LOCAL_PROXIES) == 0:
@@ -43,8 +43,7 @@ class ProxyMiddleware(object):
                 if not ip:
                     continue
                 LOCAL_PROXIES.append(str(ip, encoding = "utf8"))
-            
+        
         proxy = random.choice(LOCAL_PROXIES)
-        print ("currant_ip_proxy_is_%s ********" %proxy)
         request.meta['proxy'] = "http://%s" % proxy
         return None

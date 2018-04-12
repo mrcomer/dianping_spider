@@ -12,7 +12,7 @@ from redis import StrictRedis, ConnectionPool
 
 def load_proxies():
     redis_cli = RedisCli.get_redis_cli()
-    url = u"""http://piping.mogumiao.com/proxy/api/get_ip_al?appKey=9bce1dadc38d4b138ada8b0549aaf8ad&count=5&expiryDate=0&format=1"""
+    url = u"""http://piping.mogumiao.com/proxy/api/get_ip_al?appKey=798e6f1278d742dbb5c4663d24a761f4&count=5&expiryDate=0&format=1"""
     response = requests.get(url)
     proxies =  response.json()
     if int(proxies['code']) == 0:

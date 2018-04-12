@@ -3,12 +3,21 @@ import scrapy
 import random
 import requests
 import re
+import logging
 from scrapy.selector import Selector
 from scrapy.http.cookies import CookieJar
 from scrapy_redis.spiders import RedisSpider
 from dianping.items import DianpingItem
-from dianping.settings import LOCAL_PROXIES
+from dianping.settings import LOCAL_PROXIES, HTTPERROR_ALLOWED_CODES
+from dianping.utils import RedisCli
 
+
+class BaseUrlSpider(scrapy.Spider):
+    name = "base_url"
+
+    def __init__(self):
+        super(BaseUrlSpider, self).__init__()
+        
 
 
 class QuotesSpider(scrapy.Spider):
@@ -16,16 +25,21 @@ class QuotesSpider(scrapy.Spider):
     
     def __init__(self):
         super(QuotesSpider, self).__init__()
-        self.stand_urls = set()
+        self.redis_cli = RedisCli().get_redis_cli()
+        # self.city_dict = {1:"shanghai", 2:"beijing", 3:"hangzhong", 4:"guangzhou", 5:"nanjing", 6:"suzhou", 7:"shenzheng", 8:"chengdu",
+        # 9:"chongqing", 10:"tianjing", 11:"lingbo", 12:"yangzhou", 13:"wuxi", 14:"guzhou", 15:"xiamen", 16:"wuhan", 17:"xian", 18:"sehngyang", 19:"dalian"
+        # }
+        self.city_dict = { 8:"chengdu",
+        9:"chongqing", 10:"tianjing", 11:"lingbo", 12:"yangzhou", 13:"wuxi", 14:"guzhou", 15:"xiamen", 16:"wuhan", 17:"xian", 18:"sehngyang", 19:"dalian"
+        }
         self.cookie = {"Cookie":"_lxsdk_cuid=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _lxsdk=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _hc.v=6434107d-a90d-54b4-c801-9b0ae451b322.1516683779; s_ViewType=10; __utma=1.379189273.1520856175.1520856175.1520856175.1; __utmz=1.1520856175.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aburl=1; __utma=1.562503323.1520923756.1520923756.1520923756.1; __utmz=1.1520923756.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); cy=2; cye=beijing; _lxsdk_s=162aa4b5285-d6e-08a-a2e%7C%7C252"}
 
    
     def start_requests(self):
-        urls = [
-            'http://www.dianping.com/shopall/2/0'
-        ]
-        for url in urls:
-            yield scrapy.Request(url=url)
+        for key, value in self.city_dict.items():
+            url = 'http://www.dianping.com/shopall/%s/0' % key
+            yield scrapy.Request(url=url, meta={'city':value})
+
     
     def del_ip(self, ip):
         LOCAL_PROXIES.remove(ip)
@@ -33,31 +47,69 @@ class QuotesSpider(scrapy.Spider):
 
     def parse(self, response):
         hxs = Selector(response)
-        if int(response.status) != 200:
+        if int(response.status) in HTTPERROR_ALLOWED_CODES:
             self.del_ip(response.meta['proxy'].split("//")[1])
 
         urls = hxs.css('dl')[1].css('li').css('a').xpath('@href').extract()
-        # yield scrapy.Request(url = 'http:' + urls[0], callback = self.parse_basic_url, cookies=self.cookie) 
+        # yield scrapy.Request(url = 'http:' + urls[0], callback = self.midle_url, cookies=self.cookie) 
         for url in urls:
-            yield scrapy.Request(url = 'http:' + url, callback = self.parse_basic_url) 
-            
+            yield scrapy.Request(url = 'http:' + url , callback= self.midle_url, meta={'city':response.meta['city']})
+    
+    def midle_url(self, response):
+        hxs = Selector(response)
+        pages = hxs.xpath('//div[@class="page"]').css("a::text").extract()
+        try:
+            max_page_id = max(int(i) for i in pages if i.isdigit())
+        except Exception as e:
+            max_page_id = 0 
+            logging.info("error_log_reset_max_page_id")
+
+        if not max_page_id:
+            yield scrapy.Request(url = response.url, callback = self.parse_basic_url, meta={'city':response.meta['city']}) 
+        else:
+            for i in range(1, max_page_id+1):
+                yield scrapy.Request(url = response.url + "p%s"%i, callback=self.parse_basic_url,meta={'city':response.meta['city']})
+      
+        
+
         
     def parse_basic_url(self, response):
-        if int(response.status) != 200:
+        if int(response.status) in HTTPERROR_ALLOWED_CODES:
             self.del_ip(response.meta['proxy'].split("//")[1])
         hxs = Selector(response)
         urls = hxs.css('ul').css('li').css('a').xpath('@href').extract()
-        with open('stand_url_second.html', 'wb') as f:
-            f.write(response.body)
         for url in urls:
             if 'shop' in url and url.split('/')[-1].isdigit():
-                self.stand_urls.add(url)
-        for url in self.stand_urls:
-            yield scrapy.Request(url = url + "/review_all/p1", callback= self.parse_stand_url)
+                self.redis_cli.sadd("%s_stand_url"%response.meta['city'], url)
         
+
+    
+class DetailSpider(scrapy.Spider):
+    name="detail_info"
+    def __init__(self):
+        super(DetailSpider, self).__init__()
+        self.redis_cli = RedisCli().get_redis_cli()
+        self.city_dict = { 5:"nanjing"}
+        self.cookie = {"Cookie":"_lxsdk_cuid=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _lxsdk=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _hc.v=6434107d-a90d-54b4-c801-9b0ae451b322.1516683779; s_ViewType=10; __utma=1.379189273.1520856175.1520856175.1520856175.1; __utmz=1.1520856175.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aburl=1; __utma=1.562503323.1520923756.1520923756.1520923756.1; __utmz=1.1520923756.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); cy=2; cye=beijing; _lxsdk_s=162aa4b5285-d6e-08a-a2e%7C%7C252"}
+    
+    def start_requests(self):
+        for values in self.city_dict.values():
+            count = self.redis_cli.scard("%s_stand_url"% values)
+            for _ in range(count):
+                url = self.redis_cli.spop("%s_stand_url"% values)
+                url = str(url, encoding = "utf8")
+                self.redis_cli.sadd("%s_finish_url" % values, url)
+                yield scrapy.Request(url = url + "/review_all/p1", callback=self.parse_stand_url)
+
+    def del_ip(self, ip):
+        try:
+            LOCAL_PROXIES.remove(ip)
+        except Exception as e:
+            logging.info(e.message)
+            
     def parse_stand_url(self, response):
         #淘汰失效IP
-        if int(response.status) != 200:
+        if int(response.status) in HTTPERROR_ALLOWED_CODES:
             self.del_ip(response.meta['proxy'].split("//")[1])
         items = DianpingItem()
         hxs = Selector(response)
@@ -95,17 +147,16 @@ class QuotesSpider(scrapy.Spider):
                  
         pages = response.xpath('//div[@class="bottom-area clearfix"]/div[@class="reviews-pages"]').css("a::text").extract()
         # 找到 max pages
-        max_page_id = max(int(i) for i in pages if i.isdigit())
+        try:
+            max_page_id = max(int(i) for i in pages if i.isdigit())
+        except Exception as e:
+            max_page_id = 0 
+            logging.info("error_log_reset_max_page_id")
+
         basic_page_id = response.url.split("/")[-1][1:]
         if int(basic_page_id) <= max_page_id:
             next_url = response.url.rsplit("/", 1)[0] + "/p%s" % (int(basic_page_id) + 1)
-            yield scrapy.Request(url = next_url, callback=self.parse_stand_url, cookies = self.cookie)
-        
-        
-
-    
+            yield scrapy.Request(url = next_url, callback=self.parse_stand_url, cookies=self.cookie)
         
         
         
-
-
