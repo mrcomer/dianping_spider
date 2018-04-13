@@ -10,25 +10,29 @@ from redis import StrictRedis, ConnectionPool
 
 
 
-def load_proxies():
+def load_proxies(tag='mogumiao'):
     redis_cli = RedisCli.get_redis_cli()
-    url = u"""http://piping.mogumiao.com/proxy/api/get_ip_al?appKey=798e6f1278d742dbb5c4663d24a761f4&count=5&expiryDate=0&format=1"""
+    if tag == 'horocn':
+        url = u"""https://proxy.horocn.com/api/proxies?order_id=YVHP1597609245198294&num=5&format=json&line_separator=mac"""
+    else:
+        url = u"""http://piping.mogumiao.com/proxy/api/get_ip_al?appKey=798e6f1278d742dbb5c4663d24a761f4&count=5&expiryDate=0&format=1"""
     response = requests.get(url)
     proxies =  response.json()
-    if int(proxies['code']) == 0:
-        for item in proxies['msg']:
-            
-            ip = item['ip'] + ":" + item['port']
-            try:
-                r = requests.get("http://www.dianping.com/shopall/2/0", proxies={"https":ip}, timeout = 2)
-                redis_cli.sadd("proxies", ip)
-            except Exception as e:
-                print (e.message, ip)
+    if tag == "horocn":
+        re = proxies
     else:
-        for _ in range(3):
-            load_proxies()
-        return 0
-
+        re = proxies['msg']
+    for item in re:
+        if tag == "horocn":
+            ip = item['host'] + ":" + item['port']
+        else:
+            ip = item['ip'] + ":" + item['port']
+        try:
+            r = requests.get("http://www.dianping.com/shopall/2/0", proxies={"https":ip}, timeout = 2)
+        except Exception as e:
+            print (e.message, ip)
+            continue
+        redis_cli.sadd("proxies", ip)
 
 class Singleton(object):
     def __new__(cls, *args, **kwargs):

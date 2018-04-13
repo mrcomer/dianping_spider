@@ -26,11 +26,12 @@ class QuotesSpider(scrapy.Spider):
     def __init__(self):
         super(QuotesSpider, self).__init__()
         self.redis_cli = RedisCli().get_redis_cli()
+
         # self.city_dict = {1:"shanghai", 2:"beijing", 3:"hangzhong", 4:"guangzhou", 5:"nanjing", 6:"suzhou", 7:"shenzheng", 8:"chengdu",
-        # 9:"chongqing", 10:"tianjing", 11:"lingbo", 12:"yangzhou", 13:"wuxi", 14:"guzhou", 15:"xiamen", 16:"wuhan", 17:"xian", 18:"sehngyang", 19:"dalian"
+        # 9:"chongqing", 10:"tianjing", 11:"ningbo", 12:"yangzhou", 13:"wuxi", 14:"guzhou", 15:"xiamen", 16:"wuhan", 17:"xian", 18:"shenyang", 19:"dalian"
         # }
-        self.city_dict = { 
-        9:"chongqing", 10:"tianjing", 11:"lingbo", 12:"yangzhou", 13:"wuxi", 14:"guzhou", 15:"xiamen", 16:"wuhan", 17:"xian", 18:"sehngyang", 19:"dalian"
+        self.city_dict = {1:"shanghai", 3:"hangzhong", 4:"guangzhou", 5:"nanjing", 6:"suzhou", 7:"shenzheng", 8:"chengdu",
+        9:"chongqing", 10:"tianjing",12:"yangzhou", 13:"wuxi", 14:"guzhou", 15:"xiamen", 16:"wuhan", 17:"xian", 18:"shenyang", 19:"dalian"
         }
         self.cookie = {"Cookie":"_lxsdk_cuid=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _lxsdk=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _hc.v=6434107d-a90d-54b4-c801-9b0ae451b322.1516683779; s_ViewType=10; __utma=1.379189273.1520856175.1520856175.1520856175.1; __utmz=1.1520856175.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aburl=1; __utma=1.562503323.1520923756.1520923756.1520923756.1; __utmz=1.1520923756.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); cy=2; cye=beijing; _lxsdk_s=162aa4b5285-d6e-08a-a2e%7C%7C252"}
 
@@ -89,7 +90,9 @@ class DetailSpider(scrapy.Spider):
     def __init__(self):
         super(DetailSpider, self).__init__()
         self.redis_cli = RedisCli().get_redis_cli()
-        self.city_dict = { 5:"nanjing"}
+        self.city_dict = {1:"shanghai", 2:"beijing", 3:"hangzhong", 4:"guangzhou", 5:"nanjing", 6:"suzhou", 7:"shenzheng", 8:"chengdu",
+        9:"chongqing", 10:"tianjing", 11:"ningbo", 12:"yangzhou", 13:"wuxi", 14:"guzhou", 15:"xiamen", 16:"wuhan", 17:"xian", 18:"shenyang", 19:"dalian"
+        }
         self.cookie = {"Cookie":"_lxsdk_cuid=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _lxsdk=1612165dafac8-044cab56dee3a4-32637402-13c680-1612165dafbc8; _hc.v=6434107d-a90d-54b4-c801-9b0ae451b322.1516683779; s_ViewType=10; __utma=1.379189273.1520856175.1520856175.1520856175.1; __utmz=1.1520856175.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); aburl=1; __utma=1.562503323.1520923756.1520923756.1520923756.1; __utmz=1.1520923756.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); cy=2; cye=beijing; _lxsdk_s=162aa4b5285-d6e-08a-a2e%7C%7C252"}
     
     def start_requests(self):

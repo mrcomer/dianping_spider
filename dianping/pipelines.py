@@ -32,7 +32,7 @@ class DianpingPipeline(object):
         city = item.get("city")
 
         sql = u"""
-            insert into dp_script (shop_name, commenter_name, commenter_level,
+            insert into dp_script_stand (shop_name, commenter_name, commenter_level,
             comment_stars, comment_descript,shop_url,comment_detail, city)
             values("%s", "%s", %s, %s, "%s", "%s", "%s", "%s")
         """%(title, commenter_name, commenter_level, comment_stars, comment_descript, shop_url, comment_detail, city)

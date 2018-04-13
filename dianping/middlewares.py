@@ -30,7 +30,7 @@ class ProxyMiddleware(object):
         print ("count_is_%s" % self.count)
         if not self.count % 50:
             LOCAL_PROXIES.clear()
-
+            self.redis_cli.delete("proxies")
         retry_times = int(request.meta.get("retry_times", 0))
         ip_proxy = request.meta.get("proxy", 0)
         print (LOCAL_PROXIES)
