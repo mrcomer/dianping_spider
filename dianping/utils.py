@@ -11,6 +11,7 @@ from redis import StrictRedis, ConnectionPool
 
 
 def load_proxies(tag='mogumiao'):
+    # 付费代理
     redis_cli = RedisCli.get_redis_cli()
     if tag == 'horocn':
         url = u"""https://proxy.horocn.com/api/proxies?order_id=YVHP1597609245198294&num=5&format=json&line_separator=mac"""
@@ -43,7 +44,7 @@ class Singleton(object):
 class RedisCli(Singleton):
     @classmethod
     def get_redis_cli(cls):
-        pool = ConnectionPool.from_url("redis://:2070lxx%@119.29.67.169:6379/0")
+        pool = ConnectionPool.from_url("redis://user:ps@localhost:6379/0")
         redis = StrictRedis(connection_pool=pool)
         return redis
 
