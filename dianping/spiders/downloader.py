@@ -50,10 +50,10 @@ import pymysql
 class Test(object):
     def __init__(self):
         self.connect = pymysql.connect(
-            host = "119.29.67.169",
-            db = "dianping",
+            host = "localhost",
+            db = "db",
             user = "dev",
-            passwd = "2070lxx%",
+            passwd = "ps",
             charset = 'utf-8',
             port = 3306
         )
